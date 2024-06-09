@@ -1,43 +1,33 @@
-import { useEffect, useState } from 'react'
-import { EVENTS } from './const'
-import HomePage from './pages/Home.jsx'
-import AboutPage from './pages/About.jsx'
+import { Suspense, lazy } from 'react'
 
-function Router ({ routes = [], defaultComponent: DefaultComponent = () => null }) {
-  const [currentPath, setCurrentPath] = useState(window.location.pathname)
+import SearchPage from './pages/Search.jsx'
+import Page404 from './pages/404.jsx'
+import { Router } from './Router.jsx'
+import { Route } from './Route.jsx'
 
-  useEffect(() => {
-    const onLocationChange = () => {
-      setCurrentPath(window.location.pathname)
-    }
+const LazyHomePage = lazy(() => import('./pages/Home.jsx'))
+const LazyAboutPage = lazy(() => import('./pages/About.jsx')) // dynamic import
 
-    window.addEventListener(EVENTS.PUSHSTATE, onLocationChange)
-    window.addEventListener(EVENTS.POPSTATE, onLocationChange)
-
-    return () => {
-      window.removeEventListener(EVENTS.PUSHSTATE, onLocationChange)
-      window.addEventListener(EVENTS.POPSTATE, onLocationChange)
-    }
-  }, [])
-
-  const Page = routes.find(({ path }) => path === currentPath)?.Component
-  return Page ? <Page /> : <DefaultComponent />
-}
+const appRoutes = [
+  {
+    path: '/:lang/about',
+    Component: LazyAboutPage
+  },
+  {
+    path: '/search/:query',
+    Component: SearchPage
+  }
+]
 
 function App () {
   return (
     <main>
-      <Router routes={[
-        {
-          path: '/',
-          Component: HomePage
-        },
-        {
-          path: '/about',
-          Component: AboutPage
-        }
-      ]}
-      />
+      <Suspense fallback={<div>Loading...</div>}>
+        <Router routes={appRoutes} defaultComponent={Page404}>
+          <Route path='/' Component={LazyHomePage} />
+          <Route path='/about' Component={LazyAboutPage} />
+        </Router>
+      </Suspense>
     </main>
   )
 }
